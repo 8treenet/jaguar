@@ -19,7 +19,9 @@ type Opt struct {
 }
 
 type TcpServer interface {
+	//Listening address
 	Listen(*Opt)
+	//New connection entry
 	Accept(func(TcpConn, *Middleware))
 }
 

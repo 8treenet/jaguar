@@ -10,12 +10,19 @@ import (
 )
 
 type ReqHandle interface {
+	//Read byte stream data
 	ReadStream(...interface{}) error
+	//Read string data, need to specify length
 	ReadStreamByString(int, *string) error
+	//Write byte stream data
 	WriteStream(...interface{})
+	//Reply to a request
 	Respone() error
+	//Read byte stream
 	ReadStreamBytes() []byte
+	//Requested data
 	Reader() *bytes.Buffer
+	//Data to reply to
 	Writer() *bytes.Buffer
 }
 

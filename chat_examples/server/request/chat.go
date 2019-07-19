@@ -7,15 +7,20 @@ import (
 )
 
 func init() {
+	// 注册请求处理器 对应请求数据包的协议id101
+	// 请求处理器chat必须实现 Execute方法
 	jaguar.AddRequest(101, new(chat))
 }
 
 type chat struct {
 	jaguar.ReqHandle `inject:"req_handle"`
-	Conn             jaguar.TcpConn   `inject:"tcp_conn"`
-	Session          *plugins.Session `inject:""`
+	//通过依赖注入获取插件-实体方式
+	Session *plugins.Session `inject:""`
+	//使用 jaguar.TcpConn 插件, 该插件负责连接相关
+	Conn jaguar.TcpConn `inject:"tcp_conn"`
 }
 
+// Execute - 必须实现
 func (c *chat) Execute() {
 	var (
 		row        uint32

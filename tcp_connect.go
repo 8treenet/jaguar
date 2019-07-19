@@ -12,10 +12,15 @@ import (
 )
 
 type TcpConn interface {
+	//Additional plug-in objects, available by relying on injection
 	Attach(plugin interface{})
+	//Additional plug-in objects, interface sits, which can be obtained by relying on injection
 	AttachImpl(impl string, plugin interface{})
+	//Actively close the connection
 	Close()
+	//Remote address connected
 	RemoteAddr() net.Addr
+	//Push
 	Push(pushHandle Encode) error
 }
 
@@ -25,7 +30,7 @@ func init() {
 
 var routeMap map[uint16]interface{}
 
-// AddRequest
+// AddRequest - Join the request processor
 func AddRequest(protocolId uint16, req ReqHandle) {
 	type execute interface {
 		Execute()

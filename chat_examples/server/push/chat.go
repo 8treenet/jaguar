@@ -15,13 +15,16 @@ type chat struct {
 	row               uint32
 }
 
-// ProtocolId
+// ProtocolId - 必须实现
 func (c *chat) ProtocolId() uint16 {
+	//推送数据包的协议id
+	//jaguar.TcpConn 插件会调用 chat.ProtocolId()
 	return 300
 }
 
-// Encode()
+// Encode() - 必须实现
 func (c *chat) Encode() {
+	//jaguar.TcpConn 插件会调用 chat.Encode()
 	c.WriteStream(c.row)
 	c.WriteStream(uint8(len(c.sender)), c.sender)
 	c.WriteStream(uint16(len(c.content)), c.content)

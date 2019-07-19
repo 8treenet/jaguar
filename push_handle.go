@@ -6,7 +6,9 @@ import (
 )
 
 type PushHandle interface {
+	//Data to push
 	Writer() *bytes.Buffer
+	//Write byte stream data
 	WriteStream(values ...interface{})
 }
 
