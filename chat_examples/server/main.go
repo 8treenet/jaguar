@@ -8,6 +8,8 @@ import (
 
 	"github.com/8treenet/jaguar"
 	"github.com/8treenet/jaguar/chat_examples/server/plugins"
+
+	//引用request包，请求控制器init
 	_ "github.com/8treenet/jaguar/chat_examples/server/request"
 )
 
