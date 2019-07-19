@@ -6,7 +6,7 @@ import (
 )
 
 type PushHandle interface {
-	Buffer() *bytes.Buffer
+	Writer() *bytes.Buffer
 	WriteStream(values ...interface{})
 }
 
@@ -23,7 +23,7 @@ type pushHandle struct {
 	writeError error
 }
 
-func (ph *pushHandle) Buffer() *bytes.Buffer {
+func (ph *pushHandle) Writer() *bytes.Buffer {
 	return ph.outBuffer
 }
 

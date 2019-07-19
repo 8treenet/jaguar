@@ -15,6 +15,8 @@ type ReqHandle interface {
 	WriteStream(...interface{})
 	Respone() error
 	ReadStreamBytes() []byte
+	Reader() *bytes.Buffer
+	Writer() *bytes.Buffer
 }
 
 func newReqHandle(protocol uint16, conn *TcpConn, inBuffer *bytes.Buffer) *reqHandle {
@@ -86,7 +88,11 @@ func (rh *reqHandle) Respone() error {
 	if rh.writeError != nil {
 		return rh.writeError
 	}
-	rh.conn.respone(rh.outBuffer)
+
+	for _, f := range rh.conn.hook.respone {
+		f(rh.protocol, rh)
+	}
+	rh.conn.respone(rh.protocol, rh.outBuffer)
 	return nil
 }
 
@@ -108,6 +114,14 @@ func (rh *reqHandle) di(obj interface{}) {
 			value.Set(reflect.ValueOf(obj))
 		}
 	})
+}
+
+func (rh *reqHandle) Reader() *bytes.Buffer {
+	return rh.inBuffer
+}
+
+func (rh *reqHandle) Writer() *bytes.Buffer {
+	return rh.outBuffer
 }
 
 func toBytes(dest interface{}) (result []byte, e error) {

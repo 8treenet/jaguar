@@ -104,21 +104,30 @@ type Encode interface {
 }
 
 func (tc *TcpConn) Push(pushHandle Encode) error {
-	ph := newPushHandle(pushHandle.ProtocolId())
+	protocolId := pushHandle.ProtocolId()
+	ph := newPushHandle(protocolId)
 	ph.di(pushHandle)
+	for _, f := range tc.hook.push {
+		f(protocolId, pushHandle)
+	}
+
 	pushHandle.Encode()
 	if ph.outBuffer == nil || ph.outBuffer.Len() == 0 {
 		return errors.New("PushHandle doesn't writeStream")
 	}
+
 	if ph.writeError == nil {
+		for _, f := range tc.hook.writer {
+			ph.outBuffer = f(protocolId, ph.outBuffer)
+		}
 		tc.send(ph.outBuffer.Bytes())
 	}
 	return ph.writeError
 }
 
-func (tc *TcpConn) respone(buffer *bytes.Buffer) {
-	for _, f := range tc.hook.respone {
-		buffer = f(buffer)
+func (tc *TcpConn) respone(protocolId uint16, buffer *bytes.Buffer) {
+	for _, f := range tc.hook.writer {
+		buffer = f(protocolId, buffer)
 	}
 	sendData := buffer.Bytes()
 	tc.send(sendData)
@@ -136,11 +145,10 @@ func (tc *TcpConn) route(buffer *bytes.Buffer) {
 			}
 		}
 	}()
-
-	for _, f := range tc.hook.request {
-		buffer = f(buffer)
-	}
 	binary.Read(buffer, binary.BigEndian, &id)
+	for _, f := range tc.hook.reader {
+		buffer = f(id, buffer)
+	}
 	req, ok := routeMap[id]
 	if !ok {
 		return
@@ -154,6 +162,9 @@ func (tc *TcpConn) route(buffer *bytes.Buffer) {
 	handle := newReqHandle(id, tc, buffer)
 	handle.di(newReq.Interface())
 	tc.di(newReq.Interface())
+	for _, f := range tc.hook.request {
+		f(id, newReq.Interface())
+	}
 	newReq.MethodByName("Execute").Call(nil)
 }
 
