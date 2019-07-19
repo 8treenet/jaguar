@@ -37,7 +37,7 @@ opt := &jaguar.Opt{
 // conn : 新连接
 // middleware : 中间件
 server.Accept(func(conn *jaguar.TcpConn, middleware *jaguar.Middleware) {
-    //session 自定义的连接插件
+    //session 自定义的插件
     session := plugins.NewSession()
     //连接附加插件
     conn.Attach(session)
