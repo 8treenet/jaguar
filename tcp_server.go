@@ -20,7 +20,7 @@ type Opt struct {
 
 type TcpServer interface {
 	Listen(*Opt)
-	Accept(func(*TcpConn, *Middleware))
+	Accept(func(TcpConn, *Middleware))
 }
 
 func NewServer() TcpServer {
@@ -30,7 +30,7 @@ func NewServer() TcpServer {
 
 type tcpServer struct {
 	socket       net.Listener
-	beforeAccept func(tc *TcpConn, hook *Middleware)
+	beforeAccept func(tc TcpConn, hook *Middleware)
 }
 
 // accept
@@ -48,7 +48,7 @@ func (ts *tcpServer) accept() {
 	}
 }
 
-func (ts *tcpServer) Accept(call func(tc *TcpConn, hook *Middleware)) {
+func (ts *tcpServer) Accept(call func(tc TcpConn, hook *Middleware)) {
 	ts.beforeAccept = call
 	return
 }
@@ -75,7 +75,7 @@ func (ts *tcpServer) Close(args ...interface{}) {
 
 func (ts *Opt) init() {
 	if ts.PacketMaximum == 0 {
-		ts.PacketMaximum = 60000
+		ts.PacketMaximum = 6000
 	}
 	if ts.PacketHeadLen == 0 {
 		ts.PacketHeadLen = 4

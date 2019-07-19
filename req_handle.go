@@ -19,7 +19,7 @@ type ReqHandle interface {
 	Writer() *bytes.Buffer
 }
 
-func newReqHandle(protocol uint16, conn *TcpConn, inBuffer *bytes.Buffer) *reqHandle {
+func newReqHandle(protocol uint16, conn *tcpConn, inBuffer *bytes.Buffer) *reqHandle {
 	h := new(reqHandle)
 	h.protocol = protocol
 	h.inBuffer = inBuffer
@@ -28,7 +28,7 @@ func newReqHandle(protocol uint16, conn *TcpConn, inBuffer *bytes.Buffer) *reqHa
 }
 
 type reqHandle struct {
-	conn       *TcpConn
+	conn       *tcpConn
 	inBuffer   *bytes.Buffer
 	outBuffer  *bytes.Buffer
 	writeError error
@@ -107,6 +107,13 @@ func (rh *reqHandle) di(obj interface{}) {
 		}
 		if inject == "req_handle" {
 			value.Set(reflect.ValueOf(rh))
+			return
+		}
+		if inject != "" {
+			obj := rh.conn.attach.Interface("inject%_%" + inject)
+			if obj != nil {
+				value.Set(reflect.ValueOf(obj))
+			}
 			return
 		}
 		obj := rh.conn.attach.Interface(value.String())

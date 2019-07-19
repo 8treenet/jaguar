@@ -15,7 +15,7 @@ func NewSession() *Session {
 type Session struct {
 	userId   uint32
 	userName string
-	Conn     *jaguar.TcpConn `inject:""`
+	Conn     jaguar.TcpConn `inject:"tcp_conn"`
 }
 
 func (s *Session) Auth(token string) bool {

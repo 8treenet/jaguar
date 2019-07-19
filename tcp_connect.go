@@ -11,6 +11,14 @@ import (
 	"time"
 )
 
+type TcpConn interface {
+	Attach(plugin interface{})
+	AttachImpl(impl string, plugin interface{})
+	Close()
+	RemoteAddr() net.Addr
+	Push(pushHandle Encode) error
+}
+
 func init() {
 	routeMap = make(map[uint16]interface{})
 }
@@ -30,31 +38,32 @@ func AddRequest(protocolId uint16, req ReqHandle) {
 }
 
 // newConn
-func newConn(conn net.Conn, hook *Middleware) *TcpConn {
-	ts := new(TcpConn)
+func newConn(conn net.Conn, hook *Middleware) *tcpConn {
+	ts := new(tcpConn)
 	ts.Conn = conn
 	ts.writeBuffer = make(chan []byte, 4096)
 	ts.attach = NewJMap()
-	ts.Attach(ts)
+	ts.AttachImpl("tcp_conn", ts)
 	ts.hook = hook
 	return ts
 }
 
-type TcpConn struct {
+type tcpConn struct {
 	net.Conn
 	writeBuffer chan []byte
 	attach      *JMap
+	attachImpl  *JMap
 	hook        *Middleware
 }
 
 // start
-func (tc *TcpConn) start() {
+func (tc *tcpConn) start() {
 	go tc.read()
 	go tc.write()
 }
 
 // write
-func (tc *TcpConn) write() {
+func (tc *tcpConn) write() {
 	for {
 		data := <-tc.writeBuffer
 		head := len(data)
@@ -74,7 +83,7 @@ func (tc *TcpConn) write() {
 }
 
 // packetSize
-func (tc *TcpConn) packetSize(head []byte) uint32 {
+func (tc *tcpConn) packetSize(head []byte) uint32 {
 	buffer := bytes.NewBuffer(head)
 	var number uint32
 	binary.Read(buffer, binary.BigEndian, &number)
@@ -82,19 +91,19 @@ func (tc *TcpConn) packetSize(head []byte) uint32 {
 }
 
 // break
-func (tc *TcpConn) readBreak() {
+func (tc *tcpConn) readBreak() {
 	for _, f := range tc.hook.closed {
 		f()
 	}
 }
 
 //Close 关闭
-func (tc *TcpConn) Close() {
+func (tc *tcpConn) Close() {
 	tc.writeBuffer <- make([]byte, 0)
 	tc.Conn.Close()
 }
 
-func (tc *TcpConn) send(data []byte) {
+func (tc *tcpConn) send(data []byte) {
 	tc.writeBuffer <- data
 }
 
@@ -103,7 +112,7 @@ type Encode interface {
 	ProtocolId() uint16
 }
 
-func (tc *TcpConn) Push(pushHandle Encode) error {
+func (tc *tcpConn) Push(pushHandle Encode) error {
 	protocolId := pushHandle.ProtocolId()
 	ph := newPushHandle(protocolId)
 	ph.di(pushHandle)
@@ -125,7 +134,7 @@ func (tc *TcpConn) Push(pushHandle Encode) error {
 	return ph.writeError
 }
 
-func (tc *TcpConn) respone(protocolId uint16, buffer *bytes.Buffer) {
+func (tc *tcpConn) respone(protocolId uint16, buffer *bytes.Buffer) {
 	for _, f := range tc.hook.writer {
 		buffer = f(protocolId, buffer)
 	}
@@ -134,7 +143,7 @@ func (tc *TcpConn) respone(protocolId uint16, buffer *bytes.Buffer) {
 }
 
 // route
-func (tc *TcpConn) route(buffer *bytes.Buffer) {
+func (tc *tcpConn) route(buffer *bytes.Buffer) {
 	var id uint16 = 0
 	defer func() {
 		if perr := recover(); perr != nil {
@@ -168,14 +177,17 @@ func (tc *TcpConn) route(buffer *bytes.Buffer) {
 	newReq.MethodByName("Execute").Call(nil)
 }
 
-func (tc *TcpConn) uintToBytes(number uint32) []byte {
+func (tc *tcpConn) uintToBytes(number uint32) []byte {
 	buffer := make([]byte, 4)
 	binary.BigEndian.PutUint32(buffer, number)
 	return buffer
 }
 
 // Attach
-func (tc *TcpConn) Attach(obj interface{}) {
+func (tc *tcpConn) Attach(obj interface{}) {
+	if obj == nil {
+		panic("obj not nil")
+	}
 	objValue := reflect.ValueOf(obj)
 	if objValue.Kind() != reflect.Ptr {
 		panic("Use a pointer object, The " + fmt.Sprint(obj))
@@ -186,10 +198,25 @@ func (tc *TcpConn) Attach(obj interface{}) {
 	tc.attach.Set(reflect.TypeOf(obj).String(), obj)
 }
 
-func (tc *TcpConn) di(child interface{}) {
+// AttachImpl
+func (tc *tcpConn) AttachImpl(impl string, obj interface{}) {
+	if obj == nil {
+		panic("obj not nil")
+	}
+	tc.attach.Set("inject%_%"+impl, obj)
+}
+
+func (tc *tcpConn) di(child interface{}) {
 	structFields(child, func(sf reflect.StructField, value reflect.Value) {
-		_, inject := sf.Tag.Lookup("inject")
+		tag, inject := sf.Tag.Lookup("inject")
 		if !inject {
+			return
+		}
+		if tag != "" {
+			obj := tc.attach.Interface("inject%_%" + tag)
+			if obj != nil {
+				value.Set(reflect.ValueOf(obj))
+			}
 			return
 		}
 		obj := tc.attach.Interface(value.Type().String())
@@ -199,18 +226,14 @@ func (tc *TcpConn) di(child interface{}) {
 	})
 }
 
-func (tc *TcpConn) attachDi() {
+func (tc *tcpConn) attachDi() {
 	for _, obj := range tc.attach._map {
 		tc.di(obj)
 	}
 }
 
-func (tc *TcpConn) Read(b []byte) (n int, err error) {
-	panic("TcpConn.Read")
-}
-
 // read
-func (tc *TcpConn) read() {
+func (tc *tcpConn) read() {
 	action := 1
 	bodyLen := uint32(0)
 	packet := new(bytes.Buffer)

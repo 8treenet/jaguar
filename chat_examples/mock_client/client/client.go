@@ -34,7 +34,7 @@ func (self *TcpConn) Start() {
 }
 
 func (self *TcpConn) read() {
-	readStatus := 1
+	status := 1
 	bodyLen := uint32(0)
 	packet := new(bytes.Buffer)
 	for {
@@ -42,7 +42,7 @@ func (self *TcpConn) read() {
 		packet.Reset()
 		var data []byte
 		var trialLen int
-		if readStatus == 1 {
+		if status == 1 {
 			trialLen = 4
 		} else {
 			trialLen = int(bodyLen)
@@ -61,11 +61,11 @@ func (self *TcpConn) read() {
 			trialLen = trialLen - len
 		}
 
-		if readStatus == 1 {
-			readStatus = 2
+		if status == 1 {
+			status = 2
 			bodyLen = self.readBodyLen(packet.Bytes())
 		} else {
-			readStatus = 1
+			status = 1
 			packetHandle := new(bytes.Buffer)
 			packetHandle.Write(packet.Bytes())
 			go self.routeHandle(packetHandle)
@@ -76,7 +76,7 @@ func (self *TcpConn) read() {
 // write
 func (self *TcpConn) write() {
 	for {
-		data := <-self.getWriteChannel()
+		data := <-self.writeChannel
 		head := len(data)
 		if head == 0 {
 			return
@@ -108,17 +108,12 @@ func (self *TcpConn) readBreak() {
 
 //Close 关闭
 func (self *TcpConn) Close() {
-	self.getWriteChannel() <- make([]byte, 0)
+	self.writeChannel <- make([]byte, 0)
 	self.Conn.Close()
 }
 
-//GetWriteChannel 获取写入管道
-func (self *TcpConn) getWriteChannel() chan []byte {
-	return self.writeChannel
-}
-
 func (self *TcpConn) Send(data []byte) {
-	self.getWriteChannel() <- data
+	self.writeChannel <- data
 }
 
 func (self *TcpConn) routeHandle(buffer *bytes.Buffer) {

@@ -12,8 +12,8 @@ func init() {
 
 type chat struct {
 	jaguar.ReqHandle `inject:"req_handle"`
+	Conn             jaguar.TcpConn   `inject:"tcp_conn"`
 	Session          *plugins.Session `inject:""`
-	Conn             *jaguar.TcpConn  `inject:""`
 }
 
 func (c *chat) Execute() {
@@ -35,5 +35,10 @@ func (c *chat) Execute() {
 		}
 		packet := push.NewChat(name, content, row)
 		allSession[index].Conn.Push(packet)
+	}
+
+	//太烦了， 超过100条主动断开。
+	if row > 10 {
+		c.Conn.Close()
 	}
 }
