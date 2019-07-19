@@ -39,7 +39,7 @@ opt := &jaguar.Opt{
 server.Accept(func(conn *jaguar.TcpConn, middleware *jaguar.Middleware) {
     //session 自定义的连接插件
     session := plugins.NewSession()
-    //连接加入插件， 后续可通过依赖注入获取
+    //连接附加插件
     conn.Attach(session)
     //使用自定义的 session.CloseEvent 注册连接关闭事件
     middleware.Closed(session.CloseEvent)
