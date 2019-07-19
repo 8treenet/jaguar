@@ -14,9 +14,17 @@ import (
 func main() {
 	rand.Seed(time.Now().UnixNano())
 	server := jaguar.NewServer()
-	opt := &jaguar.Opt{Addr: "0.0.0.0:9000", PacketMaximum: 6000, PacketHeadLen: 4, IdleCheckFrequency: time.Second * 120, ByteOrder: binary.BigEndian}
+	opt := &jaguar.Opt{
+		Addr:               "0.0.0.0:9000",    //绑定地址和端口
+		PacketMaximum:      6000,              //connect 可接收的最大包体字节，超过该字节主动断开连接。
+		PacketHeadLen:      4,                 //包头长度
+		IdleCheckFrequency: time.Second * 120, //心跳检测
+		ByteOrder:          binary.BigEndian,  //网络字节序
+	}
 
 	//新连接处理
+	// conn : 新连接
+	// middleware : 中间件
 	server.Accept(func(conn jaguar.TcpConn, middleware *jaguar.Middleware) {
 		fmt.Println("Access to a new connection :", conn.RemoteAddr().String())
 		session := plugins.NewSession()
