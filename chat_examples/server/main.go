@@ -20,6 +20,13 @@ func main() {
 		session := plugins.NewSession()
 		tcp.Attach(session)
 		middleware.Closed(session.CloseEvent)
+
+		// middleware.Recover(session.Recover)
+		// middleware.Reader(session.Reader)
+		// middleware.Writer(session.Writer)
+		// middleware.Request(session.Request)
+		// middleware.Respone(session.Respone)
+		// middleware.Push(session.Push)
 	})
 
 	fmt.Println("Listen :", *opt)

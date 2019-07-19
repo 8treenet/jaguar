@@ -1,6 +1,8 @@
 package plugins
 
 import (
+	"bytes"
+	"fmt"
 	"math/rand"
 
 	"github.com/8treenet/jaguar"
@@ -38,6 +40,33 @@ func (s *Session) User() (uname string, uid uint32) {
 }
 
 func (s *Session) CloseEvent() {
+	fmt.Println("CloseEvent", s.userId)
 	RemoveSession(s.userId)
 	return
+}
+
+func (s *Session) Recover(err error, stack string) {
+	fmt.Println("Recover", err, stack)
+}
+
+func (s *Session) Reader(protocolId uint16, buffer *bytes.Buffer) *bytes.Buffer {
+	fmt.Println("Reader", protocolId)
+	return buffer
+}
+
+func (s *Session) Writer(protocolId uint16, buffer *bytes.Buffer) *bytes.Buffer {
+	fmt.Println("Writer", protocolId)
+	return buffer
+}
+
+func (s *Session) Request(protocolId uint16, handle interface{}) {
+	fmt.Println("Request", protocolId, handle)
+}
+
+func (s *Session) Respone(protocolId uint16, handle interface{}) {
+	fmt.Println("Respone", protocolId, handle)
+}
+
+func (s *Session) Push(protocolId uint16, handle interface{}) {
+	fmt.Println("Push", protocolId, handle)
 }
