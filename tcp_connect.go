@@ -109,6 +109,9 @@ func (tc *tcpConn) Close() {
 }
 
 func (tc *tcpConn) send(data []byte) {
+	if len(data) == 0 {
+		return
+	}
 	tc.writeBuffer <- data
 }
 
