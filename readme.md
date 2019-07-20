@@ -17,8 +17,8 @@
 ```go
 
 type TcpServer interface {
-	Listen(*Opt)
-	Accept(func(*TcpConn, *Middleware))
+    Listen(*Opt)
+    Accept(func(*TcpConn, *Middleware))
 }
 
 //创建 server
@@ -53,11 +53,126 @@ server.Listen(opt)
 ```go
 
 type TcpConn interface {
-	Attach(plugin interface{})
-	AttachImpl(impl string, plugin interface{})
-	Close()
-	RemoteAddr() net.Addr
-	Push(pushHandle Encode) error
+    //附加插件，依赖注入获取 {p plugin `inject:""`}
+    Attach(plugin interface{})
+    //附加插件接口形式，依赖注入获取 {p inteface `inject:"impl"`}
+    AttachImpl(impl string, plugin interface{})
+    //关闭连接
+    Close()
+    //获取远程地址
+    RemoteAddr() net.Addr
+    //推送 推送处理器
+    Push(pushHandle Encode) error
+}
+```
+
+
+## Request Handle
+```go
+// 请求处理器，读写io数据和返回响应，继承该接口可使用。
+type ReqHandle interface {
+    //读取流数据
+    ReadStream(...interface{}) error
+    //读取流数据中的字符串
+    ReadStreamByString(int, *string) error
+    //写入流数据
+    WriteStream(...interface{})
+    //回执响应
+    Respone() error
 }
 
+func init() {
+    // 注册请求处理器 对应请求数据包的协议id 101
+    // 请求处理器chat必须实现 Execute 方法
+    jaguar.AddRequest(101, new(chat))
+}
+
+//定义一个聊天请求处理器
+type chat struct {
+    //继承 ReqHandle
+    jaguar.ReqHandle `inject:"req_handle"`
+    //通过依赖注入获取插件-实体方式
+    Session *plugins.Session `inject:""`
+    //使用 jaguar.TcpConn 插件, 该插件负责连接相关
+    Conn jaguar.TcpConn `inject:"tcp_conn"`
+}
+
+// Execute - 必须实现
+func (c *chat) Execute() {
+    //c.ReadStream()
+    //c.WriteStream()
+    //c.Respone()
+}
+```
+
+## Push Handle
+```go
+// 推送处理器，写io数据，继承该接口可使用。
+type PushHandle interface {
+    //Write byte stream data
+    WriteStream(values ...interface{})
+}
+
+// 定义个推送处理器
+type chat struct {
+    jaguar.PushHandle `inject:"push_handle"`
+    //要推送的数据列 三项
+    sender            string
+    content           string
+    row               uint32
+}
+
+// ProtocolId - 必须实现
+func (c *chat) ProtocolId() uint16 {
+    //推送数据包的协议id
+    //jaguar.TcpConn 插件会调用 chat.ProtocolId()
+    return 300
+}
+
+// Encode() - 必须实现
+func (c *chat) Encode() {
+    //jaguar.TcpConn 插件会调用 chat.Encode()
+    c.WriteStream(c.row)
+    c.WriteStream(uint8(len(c.sender)), c.sender)
+    c.WriteStream(uint16(len(c.content)), c.content)
+}
+
+TcpConn.Push(&chat{sender:"lucifer", content:"fuck"})
+```
+
+
+## Middleware
+```go
+// 拦截器
+server.Accept(func(conn jaguar.TcpConn, middleware *jaguar.Middleware) {
+    middleware.Closed(f func(){
+        // Closed - Close registration for callbacks
+    })
+
+    middleware.Recover(f func(e error,s string){
+        // Recover - Request a panic in the code
+    })
+
+    middleware.Reader(func(id uint16, b *bytes.Buffer) *bytes.Buffer {
+        // Reader - Read data
+        return b
+    })
+
+    middleware.Writer(func(id uint16, b *bytes.Buffer) *bytes.Buffer {
+        // Writer - Write data
+        return b
+    })
+
+    middleware.Request(func(id uint16, reqHandle interface{}) {
+        //Request - Callback at request
+    })
+
+    middleware.Respone(func(id uint16, reqHandle interface{}) {
+        //Respone - Callback when requesting a reply
+    })
+
+    middleware.Push(func(uint16, interface{}){
+        //Push - Callbacks on push
+    })
+})
 ```
