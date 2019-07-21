@@ -202,27 +202,27 @@ $ go run mock_client/main.go
 |<=         length of body       =>|     id    | <======= data =======================>|
 |<============= header ===========>|<==================== body =======================>|
 
-功能 ：请求登录
+协议 ：请求登录
 id : 100 (2 Bytes)
 token :[] (1 Bytes, N Bytes)
 
-功能 ：请求登录回执
+协议 ：请求登录回执
 id : 100 (2 Bytes)
 ok : 1 (1 Bytes)
 uid : [](4 Bytes)
 uname : [](1 Bytes, N Bytes)
 
 
-功能 ：请求聊天消息
+协议 ：请求聊天消息
 id : 101 (2 Bytes)
 row : [] (4 Bytes)
 content : [](2 Bytes, N Bytes)
 
-功能 ：请求聊天消息回执
+协议 ：请求聊天消息回执
 id : 101 (2 Bytes)
 ok : 1 (1 Bytes)
 
-功能 ：聊天信息推送
+协议 ：聊天信息推送
 id : 300 (2 Bytes)
 sender : [] (1 Bytes, N Bytes)
 content : [](2 Bytes, N Bytes)
