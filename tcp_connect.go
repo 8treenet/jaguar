@@ -160,7 +160,15 @@ func (tc *tcpConn) Close() {
 }
 
 func (tc *tcpConn) send(data []byte) {
-	if len(data) == 0 {
+	dataLen := len(data)
+	if dataLen == 0 {
+		return
+	}
+	if dataLen > _opt.PacketMaxLength {
+		e := errors.New("Package length exceeds upper limit.")
+		for _, f := range tc.hook.recover {
+			f(e, "")
+		}
 		return
 	}
 	tc.writeBuffer <- data
