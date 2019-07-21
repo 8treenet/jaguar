@@ -18,8 +18,8 @@ func main() {
 	server := jaguar.NewServer()
 	opt := &jaguar.Opt{
 		Addr:               "0.0.0.0:9000",    //绑定地址和端口
-		PacketMaximum:      6000,              //connect 可接收的最大包体字节，超过该字节主动断开连接。
-		PacketHeadLen:      4,                 //包头长度
+		PacketMaxLength:    6000,              //connect 可接收的最大包体字节，超过该字节主动断开连接。
+		PacketHeaderLength: 2,                 //包头占位长度 1,2,4,8
 		IdleCheckFrequency: time.Second * 120, //心跳检测
 		ByteOrder:          binary.BigEndian,  //网络字节序
 	}

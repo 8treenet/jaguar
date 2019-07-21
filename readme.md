@@ -27,8 +27,8 @@ server := jaguar.NewServer()
 //创建配置
 opt := &jaguar.Opt{
     Addr: "0.0.0.0:9000",       //绑定地址和端口
-    PacketMaximum: 6000,       //connect 可接收的最大包体字节，超过该字节主动断开连接。
-    PacketHeadLen: 4,           //包头长度
+    PacketMaxLength: 6000,       //connect 可接收的最大包体字节，超过该字节主动断开连接。
+    PacketHeaderLength: 4,           //包头长度
     IdleCheckFrequency: time.Second * 120, //心跳检测
     ByteOrder: binary.BigEndian //网络字节序
 }
@@ -197,7 +197,7 @@ $ go run mock_client/main.go
 ```
 报文格式, 可变长数据需要指明 [长度, 数据]
 +-------------------+--------------+---------------------------------------------------+
-|               4 Bytes            |  2 Bytes  |       N Bytes                         |
+|               2 Bytes            |  2 Bytes  |       N Bytes                         |
 +-------------------+--------------+---------------------------------------------------+
 |<=         length of body       =>|     id    | <======= data =======================>|
 |<============= header ===========>|<==================== body =======================>|

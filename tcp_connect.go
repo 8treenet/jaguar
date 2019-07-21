@@ -71,12 +71,12 @@ func (tc *tcpConn) start() {
 func (tc *tcpConn) write() {
 	for {
 		data := <-tc.writeBuffer
-		head := len(data)
-		if head == 0 {
+		headLen := len(data)
+		if headLen == 0 {
 			return
 		}
 
-		headData := tc.uintToBytes(uint32(head))
+		headData := tc.packetLenToByte(headLen)
 		tc.SetWriteDeadline(time.Now().Add(time.Second * 15))
 		if _, err := tc.Write(headData); err != nil {
 			return
@@ -87,12 +87,63 @@ func (tc *tcpConn) write() {
 	}
 }
 
-// packetSize
-func (tc *tcpConn) packetSize(head []byte) uint32 {
+// packetLenToInt
+func (tc *tcpConn) packetLenToInt(head []byte) int {
 	buffer := bytes.NewBuffer(head)
-	var number uint32
-	binary.Read(buffer, binary.BigEndian, &number)
-	return number
+	switch len(head) {
+	case 1:
+		var x uint8
+		binary.Read(buffer, binary.BigEndian, &x)
+		return int(x)
+	case 2:
+		var x uint16
+		binary.Read(buffer, binary.BigEndian, &x)
+		return int(x)
+	case 4:
+		var x uint32
+		binary.Read(buffer, binary.BigEndian, &x)
+		return int(x)
+	case 8:
+		var x uint64
+		binary.Read(buffer, binary.BigEndian, &x)
+		return int(x)
+	}
+
+	tc.Conn.Close()
+	return 0
+}
+
+// packetSize
+func (tc *tcpConn) packetLenToByte(plen int) []byte {
+	switch _opt.PacketHeaderLength {
+	case 1:
+		data, err := toBytes(uint8(plen))
+		if err == nil {
+			return data
+		}
+	case 2:
+		data, err := toBytes(uint16(plen))
+		if err == nil {
+			return data
+		}
+	case 4:
+		data, err := toBytes(uint32(plen))
+		if err == nil {
+			return data
+		}
+	case 8:
+		data, err := toBytes(uint64(plen))
+		if err == nil {
+			return data
+		}
+	}
+
+	e := errors.New("Opt.PacketHeaderLength error")
+	for _, f := range tc.hook.recover {
+		f(e, "")
+	}
+	tc.Conn.Close()
+	return []byte{}
 }
 
 // break
@@ -243,7 +294,7 @@ func (tc *tcpConn) attachDi() {
 // read
 func (tc *tcpConn) read() {
 	action := 1
-	bodyLen := uint32(0)
+	bodyLen := 0
 	packet := new(bytes.Buffer)
 	for {
 		tc.SetReadDeadline(time.Now().Add(_opt.IdleCheckFrequency))
@@ -251,7 +302,7 @@ func (tc *tcpConn) read() {
 		var data []byte
 		var trialLen int
 		if action == 1 {
-			trialLen = int(_opt.PacketHeadLen)
+			trialLen = int(_opt.PacketHeaderLength)
 		} else {
 			trialLen = int(bodyLen)
 		}
@@ -271,8 +322,8 @@ func (tc *tcpConn) read() {
 
 		if action == 1 {
 			action = 2
-			bodyLen = tc.packetSize(packet.Bytes())
-			if bodyLen > _opt.PacketMaximum {
+			bodyLen = tc.packetLenToInt(packet.Bytes())
+			if bodyLen > _opt.PacketMaxLength {
 				tc.Conn.Close()
 				tc.readBreak()
 				return
