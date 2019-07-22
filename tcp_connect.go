@@ -87,19 +87,19 @@ func (tc *tcpConn) packetLenToInt(head []byte) int {
 	switch len(head) {
 	case 1:
 		var x uint8
-		binary.Read(buffer, binary.BigEndian, &x)
+		binary.Read(buffer, _opt.ByteOrder, &x)
 		return int(x)
 	case 2:
 		var x uint16
-		binary.Read(buffer, binary.BigEndian, &x)
+		binary.Read(buffer, _opt.ByteOrder, &x)
 		return int(x)
 	case 4:
 		var x uint32
-		binary.Read(buffer, binary.BigEndian, &x)
+		binary.Read(buffer, _opt.ByteOrder, &x)
 		return int(x)
 	case 8:
 		var x uint64
-		binary.Read(buffer, binary.BigEndian, &x)
+		binary.Read(buffer, _opt.ByteOrder, &x)
 		return int(x)
 	}
 
