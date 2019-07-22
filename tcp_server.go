@@ -42,15 +42,13 @@ func (ts *tcpServer) accept() {
 		if err != nil {
 			return
 		}
-		go func(connect net.Conn) {
-			hook := new(Middleware)
-			client := newConn(connect, hook)
-			ts.beforeAccept(client, hook)
-			client.attachDi()
-			go client.write()
-			client.read()
-		}(conn)
 
+		hook := new(Middleware)
+		client := newConn(conn, hook)
+		ts.beforeAccept(client, hook)
+		client.attachDi()
+		go client.write()
+		go client.read()
 	}
 }
 
