@@ -61,12 +61,6 @@ type tcpConn struct {
 	hook        *Middleware
 }
 
-// start
-func (tc *tcpConn) start() {
-	go tc.read()
-	go tc.write()
-}
-
 // write
 func (tc *tcpConn) write() {
 	for {
