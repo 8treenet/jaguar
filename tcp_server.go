@@ -38,18 +38,18 @@ type tcpServer struct {
 // accept
 func (ts *tcpServer) accept() {
 	for {
-		connect, err := ts.socket.Accept()
+		conn, err := ts.socket.Accept()
 		if err != nil {
 			return
 		}
-		go func() {
+		go func(connect net.Conn) {
 			hook := new(Middleware)
 			client := newConn(connect, hook)
 			ts.beforeAccept(client, hook)
 			client.attachDi()
 			go client.write()
 			client.read()
-		}()
+		}(conn)
 
 	}
 }
