@@ -1,6 +1,8 @@
 package request
 
 import (
+	"fmt"
+
 	"github.com/8treenet/jaguar"
 	"github.com/8treenet/jaguar/chat_examples/server/plugins"
 	"github.com/8treenet/jaguar/chat_examples/server/push"
@@ -44,6 +46,7 @@ func (c *chat) Execute() {
 
 	//太烦了， 超过100条主动断开。
 	if row > 10 {
+		fmt.Println("More than 10 active disconnections.")
 		c.Conn.Close()
 	}
 }
