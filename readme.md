@@ -53,10 +53,10 @@ server.Listen(opt)
 ```go
 
 type TcpConn interface {
-    //附加插件，依赖注入获取 {p plugin `inject:""`}
-    Attach(plugin interface{})
-    //附加插件接口形式，依赖注入获取 {p inteface `inject:"impl"`}
-    AttachImpl(impl string, plugin interface{})
+    //附加插件对象，可以通过依赖注入获取 type Test struct {obj object `inject:""`}
+    Attach(object interface{})
+    //附加插件对象接口形式，可以通过依赖注入获取 type Test struct {obj inteface `inject:"impl"`}
+    AttachImpl(impl string, object interface{})
     //关闭连接
     Close()
     //获取远程地址
