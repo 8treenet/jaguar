@@ -37,14 +37,11 @@ func (c *chat) Execute() {
 	name, _ := c.Session.User()
 	allSession := plugins.AllSession()
 	for index := 0; index < len(allSession); index++ {
-		if c.Session == allSession[index] {
-			continue
-		}
 		packet := push.NewChat(name, content, row)
 		allSession[index].Conn.Push(packet)
 	}
 
-	//太烦了， 超过100条主动断开。
+	//太烦了， 超过10条主动断开。
 	if row > 10 {
 		fmt.Println("More than 10 active disconnections.")
 		c.Conn.Close()

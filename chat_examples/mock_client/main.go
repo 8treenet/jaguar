@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/8treenet/jaguar/chat_examples/mock_client/client"
-	//"github.com/8treenet/jaguar/chat_examples/chat_examples/client"
 )
 
 var _client *client.TcpConn
@@ -72,16 +71,8 @@ func newInformation(buffer *bytes.Buffer) {
 }
 
 func chatterbox() {
-	msgs := []string{
-		"I’m so sorry to have bothered you.",
-		"You look tiredHad a big night?",
-		"Did you sleep soundly last night?",
-		"I haven’t seen you in years.",
-		"What’s your nationality?",
-		"I hope we will become good friends.",
-		"Where did you go over the weekend?",
-	}
 	index := uint32(1)
+	fmt.Println("Please enter what you want to send to another user and press enter to send.")
 	for {
 		packet := new(bytes.Buffer)
 		id := make([]byte, 2)
@@ -90,7 +81,11 @@ func chatterbox() {
 		row := make([]byte, 4)
 		binary.BigEndian.PutUint32(row, index)
 		packet.Write(row)
-		msg := msgs[rand.Intn(len(msgs))]
+		msg := ""
+		fmt.Scanln(&msg)
+		if msg == "" {
+			continue
+		}
 		msglen := uint16(len(msg))
 		msglenByte := make([]byte, 2)
 		binary.BigEndian.PutUint16(msglenByte, msglen)
