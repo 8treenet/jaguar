@@ -12,6 +12,10 @@
 - Inversion of Control
 - Examples
 
+#### 安装
+```sh
+$ go get -u github.com/8treenet/jaguar
+```
 
 ## Tcp Server
 ```go
