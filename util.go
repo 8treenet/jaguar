@@ -32,32 +32,32 @@ func InSlice(array interface{}, item interface{}) bool {
 	return false
 }
 
-func structFields(child interface{}, call func(reflect.StructField, reflect.Value)) {
-	etf := func(child interface{}) reflect.Type {
-		tvalue := reflect.TypeOf(child)
-		if tvalue.Kind() == reflect.Ptr {
-			return tvalue.Elem()
-		}
-		return tvalue
-	}
-	evf := func(child interface{}) reflect.Value {
-		value := reflect.ValueOf(child)
-		if value.Kind() == reflect.Ptr {
-			return value.Elem()
-		}
-		return value
-	}
-	childValue := evf(child)
-	childType := etf(child)
-	for index := 0; index < childValue.NumField(); index++ {
-		fieldValue := childValue.Field(index)
-		fieldType := childType.Field(index)
-		if fieldValue.Type().Kind() == reflect.Struct && fieldType.Anonymous {
-			structFields(fieldValue.Interface(), call)
-			continue
-		}
-		call(fieldType, fieldValue)
-	}
+func structFields2(child interface{}, call func(reflect.StructField, reflect.Value)) {
+	// etf := func(child interface{}) reflect.Type {
+	// 	tvalue := reflect.TypeOf(child)
+	// 	if tvalue.Kind() == reflect.Ptr {
+	// 		return tvalue.Elem()
+	// 	}
+	// 	return tvalue
+	// }
+	// evf := func(child interface{}) reflect.Value {
+	// 	value := reflect.ValueOf(child)
+	// 	if value.Kind() == reflect.Ptr {
+	// 		return value.Elem()
+	// 	}
+	// 	return value
+	// }
+	// childValue := evf(child)
+	// childType := etf(child)
+	// for index := 0; index < childValue.NumField(); index++ {
+	// 	fieldValue := childValue.Field(index)
+	// 	fieldType := childType.Field(index)
+	// 	if fieldValue.Type().Kind() == reflect.Struct {
+	// 		structFields2(fieldValue.Interface(), call)
+	// 		continue
+	// 	}
+	// 	call(fieldType, fieldValue)
+	// }
 }
 
 func ConvertAssign(dest, src interface{}) error {
@@ -416,4 +416,56 @@ func asString(src interface{}) string {
 		return strconv.FormatFloat(rv.Float(), 'g', -1, 32)
 	}
 	return fmt.Sprintf("%v", src)
+}
+
+func structFields(dest interface{}, call func(reflect.StructField, reflect.Value)) {
+	destVal := indirect(reflect.ValueOf(dest))
+	destType := indirectType(destVal.Type())
+	ts := deepFields(destType)
+	for index, field := range deepValues(destVal) {
+		call(ts[index], field)
+	}
+}
+
+func deepFields(reflectType reflect.Type) []reflect.StructField {
+	var fields []reflect.StructField
+
+	for i := 0; i < reflectType.NumField(); i++ {
+		v := reflectType.Field(i)
+		if (v.Anonymous && v.Type.Kind() == reflect.Struct) || v.Type.Kind() == reflect.Struct {
+			fields = append(fields, deepFields(v.Type)...)
+		} else {
+			fields = append(fields, v)
+		}
+	}
+
+	return fields
+}
+
+func deepValues(reflectValue reflect.Value) []reflect.Value {
+	var fields []reflect.Value
+	for index := 0; index < reflectValue.NumField(); index++ {
+		val := reflectValue.Field(index)
+		if val.Kind() == reflect.Struct {
+			fields = append(fields, deepValues(val)...)
+		} else {
+			fields = append(fields, val)
+		}
+	}
+
+	return fields
+}
+
+func indirect(reflectValue reflect.Value) reflect.Value {
+	for reflectValue.Kind() == reflect.Ptr {
+		reflectValue = reflectValue.Elem()
+	}
+	return reflectValue
+}
+
+func indirectType(reflectType reflect.Type) reflect.Type {
+	for reflectType.Kind() == reflect.Ptr || reflectType.Kind() == reflect.Slice {
+		reflectType = reflectType.Elem()
+	}
+	return reflectType
 }
